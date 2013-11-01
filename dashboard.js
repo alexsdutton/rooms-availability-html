@@ -1,8 +1,9 @@
 $(function() {
-    var query = "https://data.ox.ac.uk/sparql/?query=SELECT+%3Faccount+%3FresourceLabel+WHERE+%7B%0D%0A++%3Faccount+foaf%3AaccountServiceHomepage+%3Chttps%3A%2F%2Fnexus.ox.ac.uk%2F%3E+.%0D%0A++%3Fresource+foaf%3Aaccount+%3Faccount+.%0D%0A++%3Fresource+dc%3Atitle+%3FresourceLabel+.%0D%0A++%3Fresource+spatialrelations%3Awithin+%3Chttp%3A%2F%2Foxpoints.oucs.ox.ac.uk%2Fid%2F23233672%3E%0D%0A%7D&format=srj&common_prefixes=on";
+    var query = "https://data.ox.ac.uk/sparql/?query=SELECT+%3Faccount+%3FresourceLabel+%3FfloorplanPart+%3Ffloorplan+WHERE+%7B%0D%0A++%3Faccount+foaf%3AaccountServiceHomepage+%3Chttps%3A%2F%2Fnexus.ox.ac.uk%2F%3E+.%0D%0A++%3Fresource+foaf%3Aaccount+%3Faccount+.%0D%0A++%3Fresource+dc%3Atitle+%3FresourceLabel+.%0D%0A++%3Fresource+spatialrelations%3Awithin+%3Chttp%3A%2F%2Foxpoints.oucs.ox.ac.uk%2Fid%2F23233672%3E%0D%0A++OPTIONAL+%7B%0D%0A++++%3Fresource+adhoc%3AfloorplanPart+%3FfloorplanPart+.%0D%0A++++%3FfloorplanPart+%5Edcterms%3AhasPart%2B+%3Ffloorplan+.%0D%0A++++%3Ffloorplan+a+adhoc%3AFloorplanImage+.%0D%0A++%7D%0D%0A%7D&format=srj&common_prefixes=on";
     
     var availableRooms = [];
     var rooms = [];
+    var floorplans = {};
     
     var width = 500,
         height = 500,
@@ -78,6 +79,17 @@ $(function() {
         
         console.log(rooms);
     }
+
+    function processFloorplans() {
+        for (var url in floorplans) {
+xhr = new XMLHttpRequest();
+xhr.open("GET",url,false);
+//xhr.overrideMimeType("image/svg+xml");
+xhr.send("");
+document.getElementById("floorplans")
+  .appendChild(xhr.responseXML.documentElement);
+        }
+    }
     
     $.ajax(query, {
         context: this,
@@ -89,11 +101,15 @@ $(function() {
                 var mailto = resource.account.value;
                 var email = mailto.split(":")[1];
                 var title = resource.resourceLabel.value;
-                availableRooms.push({name: title, email: email});
                 //rooms += title + ", ";
                 //var room = $("<h2>"+title+"</h2><div data-room-email='" + email + "'></div>")
                 //div.append(room);
+                //
+                if (resource.floorplan)
+                    floorplans[resource.floorplan.value] = true;
+                availableRooms.push({name: title, email: email, floorplanPart: resource.floorplanPart ? resource.floorplanPart.value : undefined});
             }
+            processFloorplans();
             processRooms();
         }
     });
